@@ -1,12 +1,15 @@
-import os
-from supabase import create_client, Client
-from dotenv import load_dotenv
+from fastapi import FastAPI
+from routes.songs import router as songs_router
 
-load_dotenv()
+app = FastAPI()
 
-supabase_url: str = os.environ.get("SUPABASE_URL")
-supabase_key: str = os.environ.get("SUPABASE_KEY")
-supabase: Client = create_client(supabase_url, supabase_key)
 
-response = supabase.table("songs").select("*").execute()
-print(f"{response=}")
+@app.get("/")
+async def root():
+    """
+    # Ruta raíz que retorna la versión de la API
+    """
+    return {"version": "0.1"}
+
+
+app.include_router(songs_router)
