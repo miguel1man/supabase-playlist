@@ -11,7 +11,7 @@ class SongResponse(BaseModel):
     title: Optional[str] = None
     artist: Optional[str] = None
     youtube_url: Optional[str] = None
-    average_score: Optional[float] = None
+    previous_score: Optional[float] = None
     score_2024_10: Optional[float] = None
     score_2024_q3: Optional[float] = None
     score: Optional[float] = None

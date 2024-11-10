@@ -1,12 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from typing import List, Optional
 from models.song import SongResponse
-from utils.supabase_manager import (
-    get_filtered_songs,
-    get_songs_with_greater_or_equal,
-    get_songs_with_value,
-    get_songs_with_zero_scores,
-)
+from utils.supabase_manager import SupabaseManager
 
 router = APIRouter(
     prefix="/songs",
@@ -19,9 +14,11 @@ router = APIRouter(
 async def get_songs(score_field: str, order_field: str, select_fields: str):
     """
     # Obtiene canciones filtradas por un score mínimo
+    # select_fields: title,score_2024_10,score_2024_q3,previous_score,youtube_url,id
     """
     try:
-        songs = get_filtered_songs(
+        client = SupabaseManager()
+        songs = client.get_filtered_songs(
             score_field=score_field,
             order_field=order_field,
             select_fields=select_fields.split(","),
@@ -39,7 +36,8 @@ async def get_songs_with_score(
     # Obtiene canciones filtradas por un valor
     """
     try:
-        songs = get_songs_with_value(
+        client = SupabaseManager()
+        songs = client.get_songs_with_value(
             selected_field=selected_field,
             selected_score=selected_score,
             response_fields=response_fields.split(","),
@@ -58,12 +56,39 @@ async def get_songs_min(
     # Obtiene canciones filtradas por un score mínimo
     """
     try:
-        songs = get_songs_with_greater_or_equal(
+        client = SupabaseManager()
+        songs = client.get_songs_with_greater_or_equal(
             selected_field=selected_field,
             response_fields=response_fields.split(","),
             min_score=min_score,
         )
         print(f"Existen {len(songs)} canciones con un puntaje mayor a {min_score}")
+        return songs
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error get_songs: {str(e)}")
+
+
+@router.get("/score-range/{selected_field}/", response_model=List[SongResponse])
+async def get_songs_between(
+    score_field: str,
+    response_fields: str,
+    score_greater_or_equal: float = 90,
+    score_less_than: float = 100,
+):
+    """
+    # Obtiene canciones filtradas por un score mínimo
+    """
+    try:
+        client = SupabaseManager()
+        songs = client.get_songs_by_score_range(
+            score_field=score_field,
+            response_fields=response_fields.split(","),
+            score_greater_or_equal=score_greater_or_equal,
+            score_less_than=score_less_than,
+        )
+        print(
+            f"Existen {len(songs)} canciones con un puntaje mayor o igual a {score_greater_or_equal} y menor que {score_less_than}"
+        )
         return songs
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error get_songs: {str(e)}")
@@ -84,13 +109,14 @@ async def get_zero_score_songs(
         response_fields: Campos a incluir en la respuesta (opcional)
     """
     try:
+        client = SupabaseManager()
         # Convertir empty_fields de string a lista
         empty_fields_list = empty_fields.split(",")
 
         # Procesar response_fields solo si se proporciona
         fields_list = response_fields.split(",") if response_fields else None
 
-        songs = get_songs_with_zero_scores(
+        songs = client.get_songs_with_zero_scores(
             empty_fields=empty_fields_list,
             order_field=order_field,
             response_fields=fields_list,

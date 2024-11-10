@@ -1,5 +1,5 @@
 import os
-from typing import List
+from typing import List, Union
 from supabase import create_client, Client
 from dotenv import load_dotenv
 from pathlib import Path
@@ -36,102 +36,150 @@ class SupabaseManager:
 
         self.client: Client = create_client(self.supabase_url, self.supabase_key)
 
+    def get_filtered_songs(
+        self,
+        score_field: str,
+        order_field: str,
+        select_fields: List[str],
+        min_score: float = 90,
+    ) -> List[dict]:
+        """
+        # Obtiene canciones filtradas de Supabase según los criterios especificados
+        """
+        try:
 
-def get_filtered_songs(
-    score_field: str, order_field: str, select_fields: List[str], min_score: float = 90
-) -> List[dict]:
-    """
-    # Obtiene canciones filtradas de Supabase según los criterios especificados
-    """
-    try:
-        supabase_manager = SupabaseManager()
+            response = (
+                self.client.table("songs")
+                .select(",".join(select_fields))
+                .order(order_field, desc=True)
+                .gte(score_field, min_score)
+                .execute()
+            )
 
-        response = (
-            supabase_manager.client.table("songs")
-            .select(",".join(select_fields))
-            .order(order_field, desc=True)
-            .gte(score_field, min_score)
-            .execute()
-        )
+            return response.data
+        except Exception as e:
+            raise Exception(f"Error al obtener datos de Supabase: {str(e)}")
 
-        return response.data
-    except Exception as e:
-        raise Exception(f"Error al obtener datos de Supabase: {str(e)}")
+    def get_songs_with_value(
+        self, selected_field: str, selected_score: str, response_fields: List[str]
+    ) -> List[dict]:
+        """
+        # Obtiene canciones filtradas de Supabase según los criterios especificados
+        """
+        try:
+            if response_fields is None:
+                response_fields = list(SongResponse.model_fields.keys())
 
+            response = (
+                self.client.table("songs")
+                .select(",".join(response_fields))
+                .order("previous_score", desc=True)
+                .order(selected_field, desc=True)
+                .eq(selected_field, selected_score)
+                .execute()
+            )
 
-def get_songs_with_value(
-    selected_field: str, selected_score: str, response_fields: List[str]
-) -> List[dict]:
-    """
-    # Obtiene canciones filtradas de Supabase según los criterios especificados
-    """
-    try:
-        supabase_manager = SupabaseManager()
+            return response.data
+        except Exception as e:
+            raise Exception(f"Error al obtener datos de Supabase: {str(e)}")
 
-        if response_fields is None:
-            response_fields = list(SongResponse.model_fields.keys())
+    def get_songs_with_greater_or_equal(
+        self, selected_field: str, response_fields: List[str], min_score: float = 90
+    ) -> List[dict]:
+        """
+        # Obtiene canciones filtradas de Supabase según los criterios especificados
+        """
+        try:
+            if response_fields is None:
+                response_fields = list(SongResponse.model_fields.keys())
 
-        response = (
-            supabase_manager.client.table("songs")
-            .select(",".join(response_fields))
-            .order("average_score", desc=True)
-            .order(selected_field, desc=True)
-            .eq(selected_field, selected_score)
-            .execute()
-        )
+            response = (
+                self.client.table("songs")
+                .select(",".join(response_fields))
+                .order(selected_field, desc=True)
+                .gte(selected_field, min_score)
+                .execute()
+            )
 
-        return response.data
-    except Exception as e:
-        raise Exception(f"Error al obtener datos de Supabase: {str(e)}")
+            return response.data
+        except Exception as e:
+            raise Exception(f"Error al obtener datos de Supabase: {str(e)}")
 
+    def get_songs_by_score_range(
+        self,
+        score_field: str,
+        response_fields: List[str],
+        score_greater_or_equal: float = 90,
+        score_less_than: float = 100,
+    ) -> List[dict]:
+        """
+        # Obtiene canciones filtradas de Supabase según los criterios especificados
+        """
+        try:
+            if response_fields is None:
+                response_fields = list(SongResponse.model_fields.keys())
 
-def get_songs_with_greater_or_equal(
-    selected_field: str, response_fields: List[str], min_score: float = 90
-) -> List[dict]:
-    """
-    # Obtiene canciones filtradas de Supabase según los criterios especificados
-    """
-    try:
-        supabase_manager = SupabaseManager()
+            response = (
+                self.client.table("songs")
+                .select(",".join(response_fields))
+                .order(score_field, desc=True)
+                .gte(score_field, score_greater_or_equal)
+                .lt(score_field, score_less_than)
+                .execute()
+            )
 
-        if response_fields is None:
-            response_fields = list(SongResponse.model_fields.keys())
+            return response.data
+        except Exception as e:
+            raise Exception(f"Error al obtener datos de Supabase: {str(e)}")
 
-        response = (
-            supabase_manager.client.table("songs")
-            .select(",".join(response_fields))
-            .order(selected_field, desc=True)
-            .gte(selected_field, min_score)
-            .execute()
-        )
+    def get_songs_with_zero_scores(
+        self,
+        empty_fields: List[str],
+        order_field: str,
+        response_fields: List[str] = None,
+    ) -> List[dict]:
+        try:
+            # Si no se especifican campos de respuesta, usar los definidos en SongResponse
+            if response_fields is None:
+                response_fields = list(SongResponse.model_fields.keys())
 
-        return response.data
-    except Exception as e:
-        raise Exception(f"Error al obtener datos de Supabase: {str(e)}")
+            # Iniciar la consulta base
+            query = self.client.table("songs").select(",".join(response_fields))
 
+            # Aplicar los filtros is_("null") para cada campo en empty_fields
+            for field in empty_fields:
+                query = query.is_(field, "null")
 
-def get_songs_with_zero_scores(
-    empty_fields: List[str], order_field: str, response_fields: List[str] = None
-) -> List[dict]:
-    try:
-        supabase_manager = SupabaseManager()
+            # Aplicar el ordenamiento y ejecutar la consulta
+            response = query.order(order_field, desc=True).execute()
 
-        # Si no se especifican campos de respuesta, usar los definidos en SongResponse
-        if response_fields is None:
-            response_fields = list(SongResponse.model_fields.keys())
+            print(
+                f"Existen {len(response)} canciones con sin puntaje en los campos: {str(empty_fields)}"
+            )
+            return response.data
 
-        # Iniciar la consulta base
-        query = supabase_manager.client.table("songs").select(",".join(response_fields))
+        except Exception as e:
+            raise Exception(f"Error fetching data from Supabase: {str(e)}")
 
-        # Aplicar los filtros is_("null") para cada campo en empty_fields
-        for field in empty_fields:
-            query = query.is_(field, "null")
+    def update_song(
+        self,
+        song_id: Union[str, int],
+        selected_field: str,
+        new_value: Union[str, int],
+    ) -> List[dict]:
+        """
+        # Obtiene canciones filtradas de Supabase según los criterios especificados
+        """
+        try:
 
-        # Aplicar el ordenamiento y ejecutar la consulta
-        response = query.order(order_field, desc=True).execute()
+            response = (
+                self.client.table("songs")
+                .update({selected_field: new_value})
+                .eq("id", song_id)
+                .execute()
+            )
+            print(f"Updated song: {response}")
 
-        print(f"get_songs_with_zero_scores {response=}")
-        return response.data
-
-    except Exception as e:
-        raise Exception(f"Error fetching data from Supabase: {str(e)}")
+            return response.data
+        except Exception as e:
+            raise Exception(f"Error al actualizar datos: {str(e)}")
