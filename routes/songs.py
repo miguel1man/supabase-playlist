@@ -23,6 +23,7 @@ async def get_songs(score_field: str, order_field: str, select_fields: str):
             order_field=order_field,
             select_fields=select_fields.split(","),
         )
+        print(f"{songs=}")
         return songs
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error get_songs: {str(e)}")
