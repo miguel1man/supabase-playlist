@@ -1,9 +1,11 @@
+import uuid
 import os
-from typing import List, Union
-from supabase import create_client, Client
+from datetime import datetime, timezone
 from dotenv import load_dotenv
-from pathlib import Path
 from models.song import SongResponse
+from pathlib import Path
+from supabase import create_client, Client
+from typing import List, Optional, Union
 
 
 def get_project_root() -> Path:
@@ -183,3 +185,58 @@ class SupabaseManager:
             return response.data
         except Exception as e:
             raise Exception(f"Error al actualizar datos: {str(e)}")
+
+    def create_song(
+        self,
+        title: str,
+        artist: str,
+        youtube_url: Optional[str] = None,
+        score_2025_01: Optional[int] = None,
+    ) -> List[dict]:
+        """
+        Crea una canción en Supabase
+
+        Args:
+            title (str): Título de la canción.
+            artist (str): Artista de la canción.
+            youtube_url (Optional[str]): URL de YouTube de la canción (opcional).
+            score_2025_01 (Optional[int]): Puntuación de la canción para enero de 2025 (opcional).
+        """
+        try:
+            song_id = str(uuid.uuid4())
+            now = datetime.now(timezone.utc)
+
+            song_data = {
+                "id": song_id,
+                "title": title,
+                "artist": artist,
+                "created_at": now.isoformat(),
+                "updated_at": now.isoformat(),
+            }
+
+            if youtube_url is not None:
+                song_data["youtube_url"] = youtube_url
+            if score_2025_01 is not None:
+                song_data["score_2025_01"] = score_2025_01
+
+            print(f"{song_data=}")
+
+            responseCreation = self.client.table("songs").insert(song_data).execute()
+            print(f"Created song: {responseCreation}")
+
+            return responseCreation.data[0]
+        except Exception as e:
+            raise Exception(f"Error al agregar una canción: {str(e)}")
+
+    def get_song_list(self) -> List[dict]:
+        """
+        # Obtiene lista de canciones
+        """
+        try:
+
+            responseList = self.client.table("songs").select("*").execute()
+            print(f"Song list:\n{responseList}")
+
+            return responseList.data
+        except Exception as e:
+            raise Exception(f"Error al obtener lista de canciones: {str(e)}")

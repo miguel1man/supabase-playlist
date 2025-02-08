@@ -127,3 +127,68 @@ async def get_zero_score_songs(
         raise HTTPException(
             status_code=500, detail=f"Error fetching songs with zero scores: {str(e)}"
         )
+
+
+@router.get("/update-song/", response_model=List[SongResponse])
+async def update_song(song_id: str | int, selected_field: str, new_value: str | int):
+    """
+    # Actualiza valores
+    """
+    try:
+        client = SupabaseManager()
+        updated_song = client.update_song(song_id, selected_field, new_value)
+        print(f"{updated_song=}")
+        return updated_song
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error updating songs values:\n{str(e)}"
+        )
+
+
+@router.get("/create-song/", response_model=SongResponse)
+async def create_song(
+    title: str,
+    artist: str,
+    youtube_url: Optional[str] = None,
+    score_2025_01: Optional[int] = None,
+):
+    """
+    Crea una nueva canción en Supabase
+
+    Args:
+        title (str): Título de la canción.
+        artist (str): Artista de la canción.
+        youtube_url (Optional[str]): URL de YouTube de la canción (opcional).
+        score_2025_01 (Optional[int]): Puntuación de la canción para enero de 2025 (opcional).
+    """
+    try:
+        client = SupabaseManager()
+        created_song = client.create_song(
+            title=title,
+            artist=artist,
+            youtube_url=youtube_url,
+            score_2025_01=score_2025_01,
+        )
+        print(f"{created_song=}")
+
+        return created_song
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error al crear canción:\n{str(e)}"
+        )
+
+
+@router.get("/song-list/", response_model=List[SongResponse])
+async def get_song_list():
+    """
+    # Obtiene lista de canciones
+    """
+    try:
+        client = SupabaseManager()
+        song_list = client.get_song_list()
+        print(f"{song_list=}")
+        return song_list
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error fetching songs with zero scores: {str(e)}"
+        )
