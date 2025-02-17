@@ -63,7 +63,7 @@ class SupabaseManager:
             raise Exception(f"Error al obtener datos de Supabase: {str(e)}")
 
     def get_songs_with_value(
-        self, selected_field: str, selected_score: str, response_fields: List[str]
+        self, selected_field: str, selected_value: str, response_fields: List[str]
     ) -> List[dict]:
         """
         # Obtiene canciones filtradas de Supabase según los criterios especificados
@@ -71,17 +71,26 @@ class SupabaseManager:
         try:
             if response_fields is None:
                 response_fields = list(SongResponse.model_fields.keys())
+                # print(f"{response_fields=}")
 
             response = (
                 self.client.table("songs")
                 .select(",".join(response_fields))
                 .order("previous_score", desc=True)
                 .order(selected_field, desc=True)
-                .eq(selected_field, selected_score)
+                .eq(selected_field, selected_value)
                 .execute()
             )
 
-            return response.data
+            # Filtra los campos en la respuesta para incluir solo los solicitados
+            filtered_songs = []
+            # print(f"{filtered_songs=}")
+            for song in response.data:
+                filtered_song = {field: song.get(field) for field in response_fields}
+                # print(f"{filtered_song=}")
+                filtered_songs.append(filtered_song)
+
+            return filtered_songs
         except Exception as e:
             raise Exception(f"Error al obtener datos de Supabase: {str(e)}")
 

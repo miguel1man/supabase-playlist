@@ -29,9 +29,9 @@ async def get_songs(score_field: str, order_field: str, select_fields: str):
         raise HTTPException(status_code=500, detail=f"Error get_songs: {str(e)}")
 
 
-@router.get("/score-is/{selected_field}", response_model=List[SongResponse])
+@router.get("/value-is/{selected_field}")
 async def get_songs_with_score(
-    selected_field: str, response_fields: str, selected_score: float
+    selected_field: str, response_fields: str, selected_value: str | float
 ):
     """
     # Obtiene canciones filtradas por un valor
@@ -40,10 +40,11 @@ async def get_songs_with_score(
         client = SupabaseManager()
         songs = client.get_songs_with_value(
             selected_field=selected_field,
-            selected_score=selected_score,
+            selected_value=selected_value,
             response_fields=response_fields.split(","),
         )
-        print(f"Existen {len(songs)} canciones con un puntaje igual a {selected_score}")
+        print(f"Existen {len(songs)} canciones con un puntaje igual a {selected_value}")
+        # print(f"{songs=}")
         return songs
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error get_songs: {str(e)}")
